@@ -1,10 +1,10 @@
-﻿import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminUser } from '@/api/admin';
 import {
   Search, Pencil, Trash2, X, Loader2, ShieldCheck, User2, Chrome,
   ChevronUp, ChevronDown, RotateCcw, SlidersHorizontal,
-  Upload, Download, CheckCircle2, AlertCircle, FileText,
+  Upload, Download, CheckCircle2, AlertCircle, FileText, Plus,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -14,7 +14,7 @@ type SortDir   = 'asc' | 'desc';
 interface Filters {
   search:     string;
   role:       'all' | 'admin' | 'student';
-  status:     'all' | 'active' | 'blocked';
+  status:     'all' | 'active' | 'blocked' | 'pending';
   authMethod: 'all' | 'google' | 'email';
   joinedFrom: string;
   joinedTo:   string;
@@ -41,13 +41,15 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: 'active' | 'blocked' }) {
+function StatusBadge({ status }: { status: 'active' | 'blocked' | 'pending' }) {
   return (
     <span className={clsx(
       'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-      status === 'active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+      status === 'active' ? 'bg-green-50 text-green-700' :
+      status === 'blocked' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
     )}>
-      {status === 'active' ? '● Active' : '✕ Blocked'}
+      {status === 'active' ? '● Active' :
+       status === 'blocked' ? '✕ Blocked' : '⏰ Pending'}
     </span>
   );
 }
@@ -124,9 +126,31 @@ export default function Users() {
   const [csvRows,    setCsvRows]    = useState<CsvRow[]>([]);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
+  // add user modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('student');
+  const [newStatus, setNewStatus] = useState('active');
+
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: adminApi.getUsers,
+  });
+
+  const createMut = useMutation({
+    mutationFn: (data: { name: string; email: string; role: string; password?: string; status?: string }) =>
+      adminApi.createUser(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowAddModal(false);
+      setNewName('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewRole('student');
+      setNewStatus('active');
+    },
   });
 
   const updateMut = useMutation({
@@ -236,6 +260,12 @@ export default function Users() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">{filtered.length} of {users.length}</span>
           <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Add User
+          </button>
+          <button
             onClick={openImport}
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
@@ -312,6 +342,7 @@ export default function Users() {
               <option value="all">All statuses</option>
               <option value="active">Active</option>
               <option value="blocked">Blocked</option>
+              <option value="pending">Pending Approval</option>
             </select>
           </div>
           <div>
@@ -483,6 +514,7 @@ export default function Users() {
                   >
                     <option value="active">Active</option>
                     <option value="blocked">Blocked</option>
+                    <option value="pending">Pending Approval</option>
                   </select>
                 </div>
               </div>
@@ -664,6 +696,107 @@ export default function Users() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add User Modal ─────────────────────────────────────────────── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold text-gray-900">Add New User</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              createMut.mutate({
+                name: newName,
+                email: newEmail,
+                password: newPassword || undefined,
+                role: newRole,
+                status: newStatus,
+              });
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  required
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="e.g. john@example.com"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Leave blank for Google-only login"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                  <select
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="pending">Pending Approval</option>
+                  </select>
+                </div>
+              </div>
+              {createMut.error && (
+                <p className="text-sm text-red-600">{(createMut.error as Error).message}</p>
+              )}
+              <div className="flex gap-3 mt-6 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMut.isPending}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  {createMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Create User
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

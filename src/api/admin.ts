@@ -15,7 +15,7 @@ export interface AdminUser {
   name: string;
   email: string;
   role: 'admin' | 'student';
-  status: 'active' | 'blocked';
+  status: 'active' | 'blocked' | 'pending';
   avatar: string | null;
   hasGoogle: boolean;
   createdAt: string;
@@ -122,6 +122,8 @@ export const adminApi = {
 
   // Users
   getUsers:   ()                                              => apiFetch<AdminUser[]>('/admin/users'),
+  createUser: (data: { name: string; email: string; role: string; password?: string; status?: string }) =>
+    apiFetch<AdminUser>('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id: string, data: { name?: string; email?: string; role?: string; status?: string }) =>
     apiFetch<AdminUser>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string) =>
@@ -139,6 +141,8 @@ export const adminApi = {
   getCourses:   () => apiFetch<AdminCourse[]>('/admin/courses'),
   createCourse: (data: { title: string; description?: string; thumbnail?: string }) =>
     apiFetch<AdminCourse>('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
+  uploadThumbnail: (image: string) =>
+    apiFetch<{ thumbnailUrl: string }>('/admin/courses/upload-thumbnail', { method: 'POST', body: JSON.stringify({ image }) }),
   updateCourse: (id: string, data: { title?: string; description?: string; thumbnail?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCourse: (id: string) =>
