@@ -168,6 +168,34 @@ export const adminApi = {
       { method: 'PUT', body: JSON.stringify({ notes }) }
     ),
 
+  // Modules Reorder, Update, Duplicate, Copy
+  reorderModules: (courseId: string, moduleIds: string[]) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/reorder`, {
+      method: 'PUT', body: JSON.stringify({ moduleIds }),
+    }),
+  updateModule: (courseId: string, moduleId: string, title: string) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}`, {
+      method: 'PUT', body: JSON.stringify({ title }),
+    }),
+  duplicateModule: (courseId: string, moduleId: string) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/duplicate`, {
+      method: 'POST',
+    }),
+  copyModuleToCourse: (courseId: string, moduleId: string, targetCourseId: string) =>
+    apiFetch<{ message: string }>(`/admin/courses/${courseId}/modules/${moduleId}/copy-to/${targetCourseId}`, {
+      method: 'POST',
+    }),
+
+  // Topics Reorder & Update details
+  reorderTopics: (courseId: string, moduleId: string, topicIds: string[]) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/reorder`, {
+      method: 'PUT', body: JSON.stringify({ topicIds }),
+    }),
+  updateTopic: (courseId: string, moduleId: string, topicId: string, data: { title?: string; videoId?: string; videoUrl?: string }) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}`, {
+      method: 'PUT', body: JSON.stringify(data),
+    }),
+
   // Activity
   getActivity: (page = 1, limit = 50) =>
     apiFetch<ActivityResponse>(`/admin/activity?page=${page}&limit=${limit}`),
