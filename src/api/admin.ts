@@ -28,6 +28,7 @@ export interface AdminTopic {
   id: string;
   title: string;
   videoUrl?: string;
+  videoId?: string;
   completed: boolean;
   notes?: string;
 }
@@ -155,7 +156,7 @@ export const adminApi = {
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' }),
 
   // Topics
-  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoUrl?: string }) =>
+  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoId?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics`, {
       method: 'POST', body: JSON.stringify(data),
     }),

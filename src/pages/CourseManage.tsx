@@ -129,7 +129,7 @@ export default function CourseManage() {
   } | null>(null);
 
   const [newModTitle, setNewModTitle] = useState('');
-  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoUrl: string }>>({});
+  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoId: string }>>({});
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['admin-courses'] });
 
@@ -144,11 +144,11 @@ export default function CourseManage() {
   });
 
   const addTopicMut = useMutation({
-    mutationFn: ({ moduleId, title, videoUrl }: { moduleId: string; title: string; videoUrl: string }) =>
-      adminApi.addTopic(id!, moduleId, { title, videoUrl: videoUrl || undefined }),
+    mutationFn: ({ moduleId, title, videoId }: { moduleId: string; title: string; videoId: string }) =>
+      adminApi.addTopic(id!, moduleId, { title, videoId: videoId || undefined }),
     onSuccess: (_data, vars) => {
       refetch();
-      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoUrl: '' } }));
+      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoId: '' } }));
     },
   });
 
@@ -199,7 +199,7 @@ export default function CourseManage() {
         <div className="space-y-3">
           {(course.modules as AdminModule[]).map((mod) => {
             const isOpen = expanded.has(mod.id);
-            const tf = topicForms[mod.id] ?? { title: '', videoUrl: '' };
+            const tf = topicForms[mod.id] ?? { title: '', videoId: '' };
 
             return (
               <div
@@ -234,7 +234,7 @@ export default function CourseManage() {
                         className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          {t.videoUrl
+                          {t.videoId || t.videoUrl
                             ? <Video className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
                             : <span className="h-3.5 w-3.5 shrink-0" />}
                           <span className="text-sm text-gray-700 truncate">{t.title}</span>
@@ -281,17 +281,17 @@ export default function CourseManage() {
                         className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                       />
                       <input
-                        value={tf.videoUrl}
+                        value={tf.videoId}
                         onChange={(e) =>
-                          setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, videoUrl: e.target.value } }))
+                          setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, videoId: e.target.value } }))
                         }
-                        placeholder="Video URL (optional)"
+                        placeholder="Video ID (optional)"
                         className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                       />
                       <button
                         disabled={!tf.title.trim() || addTopicMut.isPending}
                         onClick={() =>
-                          addTopicMut.mutate({ moduleId: mod.id, title: tf.title, videoUrl: tf.videoUrl })
+                          addTopicMut.mutate({ moduleId: mod.id, title: tf.title, videoId: tf.videoId })
                         }
                         className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                       >
