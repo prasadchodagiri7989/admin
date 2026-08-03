@@ -8,13 +8,13 @@ import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';
 
 const navItems = [
-  { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/users',        icon: Users,           label: 'Users' },
-  { to: '/courses',      icon: BookOpen,        label: 'Courses' },
-  { to: '/announcements', icon: Megaphone,      label: 'Announcements' },
-  { to: '/activity',     icon: Activity,        label: 'Login Activity' },
-  { to: '/suspicious',   icon: ShieldAlert,     label: 'Suspicious Activity', alert: true },
-  { to: '/sessions',     icon: Camera,          label: 'Face Captures' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/users', icon: Users, label: 'Users' },
+  { to: '/courses', icon: BookOpen, label: 'Courses' },
+  { to: '/announcements', icon: Megaphone, label: 'Announcements' },
+  { to: '/activity', icon: Activity, label: 'Login Activity' },
+  { to: '/suspicious', icon: ShieldAlert, label: 'Suspicious Activity', alert: true },
+  { to: '/sessions', icon: Camera, label: 'Face Captures' },
 ];
 
 interface SidebarProps {
@@ -56,7 +56,7 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shrink-0">
               <GraduationCap className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold text-white tracking-tight">SkyLearn Admin</span>
+            <span className="font-semibold text-white tracking-tight">BIM Era Academy Admin</span>
           </div>
           {onClose && (
             <button

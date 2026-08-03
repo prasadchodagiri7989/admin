@@ -7,11 +7,11 @@ import { useAuth } from '@/context/AuthContext';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPwd,  setShowPwd]  = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ export default function Login() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 mb-3">
             <GraduationCap className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">SkyLearn Admin</h1>
+          <h1 className="text-2xl font-bold text-white">BIM Era Academy Admin</h1>
           <p className="text-slate-400 text-sm mt-1">Sign in to your admin account</p>
         </div>
 
@@ -98,9 +98,6 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-gray-400">
-            Demo: <span className="font-mono">admin@example.com</span> / <span className="font-mono">Admin123!</span>
-          </p>
         </div>
       </div>
     </div>

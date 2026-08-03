@@ -36,7 +36,7 @@ export default function Layout() {
             <Menu className="h-5 w-5" />
           </button>
           <span className="font-semibold text-gray-800 text-sm">
-            SkyLearn Admin
+            BIM Era Academy Admin
           </span>
           <div className="ml-auto"><GlobalSearch /></div>
         </header>
