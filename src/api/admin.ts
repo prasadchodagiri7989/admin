@@ -29,8 +29,10 @@ export interface AdminTopic {
   title: string;
   videoUrl?: string;
   videoId?: string;
+  videoType?: 'bunny' | 'youtube';
   completed: boolean;
   notes?: string;
+  attachments?: { id: string; name: string; url: string }[];
 }
 
 export interface AdminModule {
@@ -44,12 +46,23 @@ export interface AdminCourse {
   title: string;
   description: string;
   thumbnail: string;
+  isSample: boolean;
+  batches: string[];
   lessonsCount: number;
   moduleCount: number;
   topicCount: number;
   modules: AdminModule[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminBatch {
+  id: string;
+  name: string;
+  description: string;
+  members: { id: string; name: string; email: string; status: string }[];
+  courses: { id: string; title: string; description: string }[];
+  moduleOrder?: { courseId: string; moduleIds: string[] }[];
 }
 
 export interface ActivityRecord {
@@ -156,7 +169,7 @@ export const adminApi = {
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' }),
 
   // Topics
-  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoId?: string }) =>
+  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoId?: string; videoUrl?: string; videoType?: string; attachmentFile?: string; attachmentName?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics`, {
       method: 'POST', body: JSON.stringify(data),
     }),
@@ -191,7 +204,7 @@ export const adminApi = {
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/reorder`, {
       method: 'PUT', body: JSON.stringify({ topicIds }),
     }),
-  updateTopic: (courseId: string, moduleId: string, topicId: string, data: { title?: string; videoId?: string; videoUrl?: string }) =>
+  updateTopic: (courseId: string, moduleId: string, topicId: string, data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}`, {
       method: 'PUT', body: JSON.stringify(data),
     }),
@@ -211,4 +224,56 @@ export const adminApi = {
     apiFetch<AdminAnnouncement>(`/admin/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAnnouncement: (id: string) =>
     apiFetch<{ message: string }>(`/admin/announcements/${id}`, { method: 'DELETE' }),
+
+  // Batches CRUD
+  getBatches: () => apiFetch<AdminBatch[]>('/admin/batches'),
+  getBatchById: (id: string) => apiFetch<AdminBatch>(`/admin/batches/${id}`),
+  createBatch: (data: { name: string; description?: string }) =>
+    apiFetch<AdminBatch>('/admin/batches', { method: 'POST', body: JSON.stringify(data) }),
+  updateBatch: (id: string, data: { name?: string; description?: string }) =>
+    apiFetch<AdminBatch>(`/admin/batches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBatch: (id: string) =>
+    apiFetch<{ message: string }>(`/admin/batches/${id}`, { method: 'DELETE' }),
+  addBatchMember: (batchId: string, userId: string) =>
+    apiFetch<AdminBatch>(`/admin/batches/${batchId}/members`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  removeBatchMember: (batchId: string, userId: string) =>
+    apiFetch<AdminBatch>(`/admin/batches/${batchId}/members/${userId}`, { method: 'DELETE' }),
+  alignBatchCourses: (batchId: string, courseIds: string[]) =>
+    apiFetch<AdminBatch>(`/admin/batches/${batchId}/courses`, { method: 'POST', body: JSON.stringify({ courseIds }) }),
+
+  // Attachments
+  addAttachment: (courseId: string, moduleId: string, topicId: string, name: string, file: string) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}/attachments`, {
+      method: 'POST', body: JSON.stringify({ name, file }),
+    }),
+  renameAttachment: (courseId: string, moduleId: string, topicId: string, attachmentId: string, name: string) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}/attachments/${attachmentId}`, {
+      method: 'PUT', body: JSON.stringify({ name }),
+    }),
+  deleteAttachment: (courseId: string, moduleId: string, topicId: string, attachmentId: string) =>
+    apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    }),
+
+  // Batch Module Sequencing
+  reorderBatchModules: (batchId: string, courseId: string, moduleIds: string[]) =>
+    apiFetch<AdminBatch>(`/admin/batches/${batchId}/courses/${courseId}/modules/reorder`, {
+      method: 'POST', body: JSON.stringify({ moduleIds }),
+    }),
+
+  // Discussions
+  getDiscussions: () => apiFetch<any[]>('/discussions'),
+  createDiscussion: (data: {
+    courseId: string;
+    topicId: string;
+    content: string;
+    parentId?: string | null;
+    attachment?: { name: string; file: string } | null;
+  }) =>
+    apiFetch<any>('/discussions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteDiscussion: (id: string) =>
+    apiFetch<{ message: string }>(`/discussions/${id}`, { method: 'DELETE' }),
 };

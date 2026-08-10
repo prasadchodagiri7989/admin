@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminCourse, type AdminModule } from '@/api/admin';
 import {
   ArrowLeft, Plus, Trash2, ChevronDown, ChevronRight, Loader2, Video,
-  FileText, Save, Eye, Code, ArrowUp, ArrowDown, Copy, FolderInput, Pencil
+  FileText, Save, Eye, Code, ArrowUp, ArrowDown, Copy, FolderInput, Pencil, X
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -132,7 +132,7 @@ export default function CourseManage() {
 
   // New modules / topic values
   const [newModTitle, setNewModTitle] = useState('');
-  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoId: string }>>({});
+  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoId: string; videoType?: string; attachmentFile?: string; attachmentName?: string }>>({});
 
   // Course title inline editing state
   const [isEditingCourseTitle, setIsEditingCourseTitle] = useState(false);
@@ -148,7 +148,7 @@ export default function CourseManage() {
 
   // Topic detail editing state (Title, Video ID, Fallback URL)
   const [editingTopic, setEditingTopic] = useState<{
-    moduleId: string; id: string; title: string; videoId: string; videoUrl: string;
+    moduleId: string; id: string; title: string; videoId: string; videoUrl: string; videoType?: string; attachments?: { id: string; name: string; url: string }[];
   } | null>(null);
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['admin-courses'] });
@@ -198,11 +198,11 @@ export default function CourseManage() {
 
   // Topic operations mutations
   const addTopicMut = useMutation({
-    mutationFn: ({ moduleId, title, videoId }: { moduleId: string; title: string; videoId: string }) =>
-      adminApi.addTopic(id!, moduleId, { title, videoId: videoId || undefined }),
+    mutationFn: ({ moduleId, title, videoId, videoUrl, videoType, attachmentFile, attachmentName }: { moduleId: string; title: string; videoId?: string; videoUrl?: string; videoType?: string; attachmentFile?: string; attachmentName?: string }) =>
+      adminApi.addTopic(id!, moduleId, { title, videoId: videoId || undefined, videoUrl: videoUrl || undefined, videoType, attachmentFile, attachmentName }),
     onSuccess: (_data, vars) => {
       refetch();
-      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoId: '' } }));
+      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoId: '', videoType: 'bunny', attachmentFile: '', attachmentName: '' } }));
     },
   });
 
@@ -213,7 +213,7 @@ export default function CourseManage() {
   });
 
   const updateTopicMut = useMutation({
-    mutationFn: ({ moduleId, topicId, data }: { moduleId: string; topicId: string; data: { title?: string; videoId?: string; videoUrl?: string } }) =>
+    mutationFn: ({ moduleId, topicId, data }: { moduleId: string; topicId: string; data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string } }) =>
       adminApi.updateTopic(id!, moduleId, topicId, data),
     onSuccess: () => {
       refetch();
@@ -225,6 +225,55 @@ export default function CourseManage() {
     mutationFn: ({ moduleId, topicIds }: { moduleId: string; topicIds: string[] }) =>
       adminApi.reorderTopics(id!, moduleId, topicIds),
     onSuccess: refetch,
+  });
+
+  const [renamingAttachmentId, setRenamingAttachmentId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+
+  const addAttachmentMut = useMutation({
+    mutationFn: ({ name, file }: { name: string; file: string }) =>
+      adminApi.addAttachment(id!, editingTopic!.moduleId, editingTopic!.id, name, file),
+    onSuccess: (updatedCourse) => {
+      refetch();
+      if (editingTopic) {
+        const mod = updatedCourse.modules.find(m => m.id === editingTopic.moduleId);
+        const top = mod?.topics.find(t => t.id === editingTopic.id);
+        if (top) {
+          setEditingTopic(prev => prev ? { ...prev, attachments: top.attachments } : null);
+        }
+      }
+    }
+  });
+
+  const renameAttachmentMut = useMutation({
+    mutationFn: ({ attachmentId, name }: { attachmentId: string; name: string }) =>
+      adminApi.renameAttachment(id!, editingTopic!.moduleId, editingTopic!.id, attachmentId, name),
+    onSuccess: (updatedCourse) => {
+      refetch();
+      setRenamingAttachmentId(null);
+      if (editingTopic) {
+        const mod = updatedCourse.modules.find(m => m.id === editingTopic.moduleId);
+        const top = mod?.topics.find(t => t.id === editingTopic.id);
+        if (top) {
+          setEditingTopic(prev => prev ? { ...prev, attachments: top.attachments } : null);
+        }
+      }
+    }
+  });
+
+  const deleteAttachmentMut = useMutation({
+    mutationFn: (attachmentId: string) =>
+      adminApi.deleteAttachment(id!, editingTopic!.moduleId, editingTopic!.id, attachmentId),
+    onSuccess: (updatedCourse) => {
+      refetch();
+      if (editingTopic) {
+        const mod = updatedCourse.modules.find(m => m.id === editingTopic.moduleId);
+        const top = mod?.topics.find(t => t.id === editingTopic.id);
+        if (top) {
+          setEditingTopic(prev => prev ? { ...prev, attachments: top.attachments } : null);
+        }
+      }
+    }
   });
 
   // Reorder Chevrons handlers
@@ -510,6 +559,8 @@ export default function CourseManage() {
                                 title: t.title,
                                 videoId: t.videoId ?? '',
                                 videoUrl: t.videoUrl ?? '',
+                                videoType: t.videoType ?? 'bunny',
+                                attachments: t.attachments ?? [],
                               })
                             }
                             className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -548,35 +599,110 @@ export default function CourseManage() {
                     ))}
 
                     {/* Quick Add Topic */}
-                    <div className="flex items-center gap-2 pt-1">
-                      <input
-                        value={tf.title}
-                        onChange={(e) =>
-                          setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, title: e.target.value } }))
-                        }
-                        placeholder="Topic title"
-                        className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      />
-                      <input
-                        value={tf.videoId}
-                        onChange={(e) =>
-                          setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, videoId: e.target.value } }))
-                        }
-                        placeholder="Video ID (optional)"
-                        className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      />
-                      <button
-                        disabled={!tf.title.trim() || addTopicMut.isPending}
-                        onClick={() =>
-                          addTopicMut.mutate({ moduleId: mod.id, title: tf.title, videoId: tf.videoId })
-                        }
-                        className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                      >
-                        {addTopicMut.isPending
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <Plus className="h-3 w-3" />}
-                        Add
-                      </button>
+                    <div className="flex flex-col gap-2 pt-2 border-t border-gray-100/50">
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={tf.title}
+                          onChange={(e) =>
+                            setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, title: e.target.value } }))
+                          }
+                          placeholder="Topic title"
+                          className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        />
+                        <select
+                          value={tf.videoType || 'bunny'}
+                          onChange={(e) =>
+                            setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, videoType: e.target.value } }))
+                          }
+                          className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        >
+                          <option value="bunny">Bunny</option>
+                          <option value="youtube">YouTube</option>
+                        </select>
+                        <input
+                          value={tf.videoId}
+                          onChange={(e) =>
+                            setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, videoId: e.target.value } }))
+                          }
+                          placeholder={tf.videoType === 'youtube' ? "Video URL (YouTube)" : "Video ID (Bunny)"}
+                          className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        />
+                        <button
+                          disabled={!tf.title.trim() || addTopicMut.isPending}
+                          onClick={() =>
+                            addTopicMut.mutate({
+                              moduleId: mod.id,
+                              title: tf.title,
+                              videoId: tf.videoType === 'youtube' ? '' : tf.videoId,
+                              videoUrl: tf.videoType === 'youtube' ? tf.videoId : '',
+                              videoType: tf.videoType || 'bunny',
+                              attachmentFile: tf.attachmentFile || undefined,
+                              attachmentName: tf.attachmentName || undefined,
+                            })
+                          }
+                          className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                        >
+                          {addTopicMut.isPending
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Plus className="h-3 w-3" />}
+                          Add
+                        </button>
+                      </div>
+
+                      {/* Optional attachment fields */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                        <div className="flex items-center gap-1.5 shrink-0 select-none">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">PDF Attachment (Optional):</span>
+                        </div>
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          id={`file-upload-${mod.id}`}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setTopicForms((f) => ({
+                                  ...f,
+                                  [mod.id]: {
+                                    ...tf,
+                                    attachmentFile: reader.result as string,
+                                    attachmentName: file.name.replace(/\.[^/.]+$/, "")
+                                  }
+                                }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                        />
+                        {tf.attachmentFile && (
+                          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] text-gray-400 shrink-0">Name:</span>
+                            <input
+                              value={tf.attachmentName || ''}
+                              onChange={(e) =>
+                                setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, attachmentName: e.target.value } }))
+                              }
+                              placeholder="Name/Rename PDF"
+                              className="flex-1 rounded border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white truncate"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById(`file-upload-${mod.id}`) as HTMLInputElement;
+                                if (el) el.value = '';
+                                setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, attachmentFile: '', attachmentName: '' } }));
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                              title="Clear Attachment"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -684,23 +810,175 @@ export default function CourseManage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Video ID (Bunny Stream)</label>
-                <input
-                  value={editingTopic.videoId}
-                  onChange={(e) => setEditingTopic({ ...editingTopic, videoId: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. e3f48eff-6b17-47e7-a4cc-3433adebb20d"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Video Source</label>
+                <select
+                  value={editingTopic.videoType || 'bunny'}
+                  onChange={(e) => setEditingTopic({ ...editingTopic, videoType: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="bunny">Bunny Stream</option>
+                  <option value="youtube">YouTube</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (Fallback/YouTube/Livid)</label>
-                <input
-                  value={editingTopic.videoUrl}
-                  onChange={(e) => setEditingTopic({ ...editingTopic, videoUrl: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="https://youtube.com/watch?v=..."
-                />
+
+              {editingTopic.videoType === 'youtube' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (YouTube)</label>
+                  <input
+                    value={editingTopic.videoUrl}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, videoUrl: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Video ID (Bunny Stream)</label>
+                  <input
+                    value={editingTopic.videoId}
+                    onChange={(e) => setEditingTopic({ ...editingTopic, videoId: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g. e3f48eff-6b17-47e7-a4cc-3433adebb20d"
+                  />
+                </div>
+              )}
+
+              {/* Attachments Section */}
+              <div className="border-t border-gray-150 pt-4 mt-4 select-none">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Topic Attachments & Reference PDFs</label>
+                
+                {/* List current attachments */}
+                <div className="space-y-2 mb-3 max-h-40 overflow-y-auto pr-1">
+                  {editingTopic.attachments && editingTopic.attachments.length > 0 ? (
+                    editingTopic.attachments.map((att: any) => (
+                      <div key={att.id || att._id} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        {renamingAttachmentId === (att.id || att._id) ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <input
+                              value={renameInput}
+                              onChange={(e) => setRenameInput(e.target.value)}
+                              className="flex-1 rounded border border-gray-300 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (renameInput.trim()) {
+                                  renameAttachmentMut.mutate({ attachmentId: att.id || att._id, name: renameInput.trim() });
+                                }
+                              }}
+                              disabled={renameAttachmentMut.isPending}
+                              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setRenamingAttachmentId(null)}
+                              className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <p className="text-xs font-medium text-gray-700 truncate">{att.name}</p>
+                              <a
+                                href={att.url.startsWith('http') ? att.url : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${att.url}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-indigo-500 hover:underline font-semibold"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRenamingAttachmentId(att.id || att._id);
+                                  setRenameInput(att.name);
+                                }}
+                                className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                                title="Rename Attachment"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('Delete this attachment?')) {
+                                    deleteAttachmentMut.mutate(att.id || att._id);
+                                  }
+                                }}
+                                disabled={deleteAttachmentMut.isPending}
+                                className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                                title="Delete Attachment"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No attachments uploaded yet.</p>
+                  )}
+                </div>
+
+                {/* Upload new attachment form */}
+                <div className="bg-indigo-50/30 border border-indigo-100 rounded-lg p-3 space-y-2">
+                  <span className="text-xs font-semibold text-indigo-900">Upload New Attachment</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    id="modal-file-upload"
+                    className="block w-full text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="modal-file-name"
+                      placeholder="Attachment Display Name"
+                      className="flex-1 rounded border border-gray-300 px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const fileEl = document.getElementById('modal-file-upload') as HTMLInputElement;
+                        const nameEl = document.getElementById('modal-file-name') as HTMLInputElement;
+                        const file = fileEl?.files?.[0];
+                        const name = nameEl?.value?.trim() || file?.name?.replace(/\.[^/.]+$/, "") || 'Attachment';
+
+                        if (!file) {
+                          alert('Please select a PDF file first.');
+                          return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          addAttachmentMut.mutate({
+                            name,
+                            file: reader.result as string,
+                          }, {
+                            onSuccess: () => {
+                              if (fileEl) fileEl.value = '';
+                              if (nameEl) nameEl.value = '';
+                            }
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      disabled={addAttachmentMut.isPending}
+                      className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    >
+                      {addAttachmentMut.isPending ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             {updateTopicMut.error && (
@@ -721,8 +999,9 @@ export default function CourseManage() {
                       topicId: editingTopic.id,
                       data: {
                         title: editingTopic.title.trim(),
-                        videoId: editingTopic.videoId ? editingTopic.videoId.trim() : '',
-                        videoUrl: editingTopic.videoUrl ? editingTopic.videoUrl.trim() : '',
+                        videoId: editingTopic.videoType === 'youtube' ? '' : (editingTopic.videoId ? editingTopic.videoId.trim() : ''),
+                        videoUrl: editingTopic.videoType === 'youtube' ? (editingTopic.videoUrl ? editingTopic.videoUrl.trim() : '') : '',
+                        videoType: editingTopic.videoType || 'bunny',
                       },
                     });
                   }

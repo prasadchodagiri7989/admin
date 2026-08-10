@@ -8,7 +8,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-type CourseFormData = { title: string; description: string; thumbnail: string };
+type CourseFormData = { title: string; description: string; thumbnail: string; isSample: boolean; batches: string[] };
 
 function CourseModal({
   course, onClose,
@@ -17,10 +17,16 @@ function CourseModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { data: batches = [] } = useQuery({
+    queryKey: ['admin-batches'],
+    queryFn: adminApi.getBatches,
+  });
   const [form, setForm] = useState<CourseFormData>({
     title:       course?.title       ?? '',
     description: course?.description ?? '',
     thumbnail:   course?.thumbnail   ?? '',
+    isSample:    course?.isSample    ?? false,
+    batches:     course?.batches     ?? [],
   });
 
   const [uploading, setUploading] = useState(false);
@@ -145,6 +151,65 @@ function CourseModal({
               />
             </div>
           </div>
+          
+          {/* Is Sample Course Checkbox */}
+          <div className="flex items-center gap-2 mt-4">
+            <input
+              type="checkbox"
+              id="isSample"
+              checked={form.isSample}
+              onChange={(e) => setForm((f) => ({ ...f, isSample: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            />
+            <label htmlFor="isSample" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+              Mark as Sample Course (visible to pending approval users)
+            </label>
+          </div>
+
+          {/* Batches Dropdown Checklist */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Assign Batches (Visibility)</label>
+            <div className="border border-gray-300 rounded-lg p-3 bg-white space-y-2 max-h-40 overflow-y-auto">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 select-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = batches.map(b => b.id);
+                    const areAllSelected = form.batches.length === batches.length;
+                    setForm(f => ({ ...f, batches: areAllSelected ? [] : allIds }));
+                  }}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 focus:outline-none"
+                >
+                  {form.batches.length === batches.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <span className="text-xs text-gray-500">{form.batches.length} selected</span>
+              </div>
+              {batches.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No batches created yet. Go to Batches module first.</p>
+              ) : (
+                batches.map((b) => (
+                  <label key={b.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={form.batches.includes(b.id)}
+                      onChange={() => {
+                        setForm(f => {
+                          const exists = f.batches.includes(b.id);
+                          const next = exists
+                            ? f.batches.filter(id => id !== b.id)
+                            : [...f.batches, b.id];
+                          return { ...f, batches: next };
+                        });
+                      }}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    {b.name}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+
           {mut.error && (
             <p className="text-sm text-red-600">{(mut.error as Error).message}</p>
           )}

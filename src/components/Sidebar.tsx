@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, BookOpen, Activity, ShieldAlert, LogOut, GraduationCap, Megaphone, X, Camera,
+  LayoutDashboard, Users, BookOpen, Activity, ShieldAlert, LogOut, GraduationCap, Megaphone, X, Camera, Layers, MessageSquare,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
@@ -10,8 +10,10 @@ import clsx from 'clsx';
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/users', icon: Users, label: 'Users' },
+  { to: '/batches', icon: Layers, label: 'Batches' },
   { to: '/courses', icon: BookOpen, label: 'Courses' },
   { to: '/announcements', icon: Megaphone, label: 'Announcements' },
+  { to: '/discussions', icon: MessageSquare, label: 'Discussions' },
   { to: '/activity', icon: Activity, label: 'Login Activity' },
   { to: '/suspicious', icon: ShieldAlert, label: 'Suspicious Activity', alert: true },
   { to: '/sessions', icon: Camera, label: 'Face Captures' },

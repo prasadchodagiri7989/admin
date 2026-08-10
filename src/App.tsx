@@ -11,6 +11,9 @@ import Activity from './pages/Activity';
 import SuspiciousActivity from './pages/SuspiciousActivity';
 import LoginSessions from '@/pages/LoginSessions'; // Audit face capture logs
 import Announcements from './pages/Announcements';
+import Batches from './pages/Batches';
+import BatchDetail from './pages/BatchDetail';
+import Discussions from './pages/Discussions';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient({
@@ -44,11 +47,14 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
-                <Route path="/dashboard"           element={<Dashboard />} />
+                 <Route path="/dashboard"           element={<Dashboard />} />
                 <Route path="/users"               element={<Users />} />
+                <Route path="/batches"             element={<Batches />} />
+                <Route path="/batches/:id"         element={<BatchDetail />} />
                 <Route path="/courses"             element={<Courses />} />
                 <Route path="/courses/:id/manage"  element={<CourseManage />} />
                 <Route path="/announcements"       element={<Announcements />} />
+                <Route path="/discussions"         element={<Discussions />} />
                 <Route path="/activity"            element={<Activity />} />
                 <Route path="/suspicious"          element={<SuspiciousActivity />} />
                 <Route path="/sessions"            element={<LoginSessions />} />
