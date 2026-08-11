@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminBatch } from '@/api/admin';
 import { Plus, Trash2, Settings, X, Loader2, Info } from 'lucide-react';
@@ -84,8 +84,18 @@ function BatchModal({
 
 export default function Batches() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const shouldCreate = searchParams.get('create') === 'true';
+
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<AdminBatch | null>(null);
+
+  useEffect(() => {
+    if (shouldCreate) {
+      setShowCreate(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [shouldCreate, setSearchParams]);
 
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ['admin-batches'],

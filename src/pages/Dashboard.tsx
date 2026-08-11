@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
+import { Link } from 'react-router-dom';
 import {
   Users, BookOpen, LogIn, TrendingUp,
-  Monitor, Smartphone, Globe,
+  Monitor, Smartphone, Globe, Plus,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -70,7 +71,23 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/courses?create=true"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Create Course
+          </Link>
+          <Link
+            to="/batches?create=true"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Create Batch
+          </Link>
+        </div>
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -132,7 +132,7 @@ export default function CourseManage() {
 
   // New modules / topic values
   const [newModTitle, setNewModTitle] = useState('');
-  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoId: string; videoType?: string; attachmentFile?: string; attachmentName?: string }>>({});
+  const [topicForms, setTopicForms] = useState<Record<string, { title: string; videoId: string; videoType?: string; bunnyLibraryId?: string; attachmentFile?: string; attachmentName?: string }>>({});
 
   // Course title inline editing state
   const [isEditingCourseTitle, setIsEditingCourseTitle] = useState(false);
@@ -148,7 +148,7 @@ export default function CourseManage() {
 
   // Topic detail editing state (Title, Video ID, Fallback URL)
   const [editingTopic, setEditingTopic] = useState<{
-    moduleId: string; id: string; title: string; videoId: string; videoUrl: string; videoType?: string; attachments?: { id: string; name: string; url: string }[];
+    moduleId: string; id: string; title: string; videoId: string; videoUrl: string; videoType?: string; bunnyLibraryId?: string; attachments?: { id: string; name: string; url: string }[];
   } | null>(null);
 
   const refetch = () => qc.invalidateQueries({ queryKey: ['admin-courses'] });
@@ -198,11 +198,11 @@ export default function CourseManage() {
 
   // Topic operations mutations
   const addTopicMut = useMutation({
-    mutationFn: ({ moduleId, title, videoId, videoUrl, videoType, attachmentFile, attachmentName }: { moduleId: string; title: string; videoId?: string; videoUrl?: string; videoType?: string; attachmentFile?: string; attachmentName?: string }) =>
-      adminApi.addTopic(id!, moduleId, { title, videoId: videoId || undefined, videoUrl: videoUrl || undefined, videoType, attachmentFile, attachmentName }),
+    mutationFn: ({ moduleId, title, videoId, videoUrl, videoType, bunnyLibraryId, attachmentFile, attachmentName }: { moduleId: string; title: string; videoId?: string; videoUrl?: string; videoType?: string; bunnyLibraryId?: string; attachmentFile?: string; attachmentName?: string }) =>
+      adminApi.addTopic(id!, moduleId, { title, videoId: videoId || undefined, videoUrl: videoUrl || undefined, videoType, bunnyLibraryId: bunnyLibraryId || undefined, attachmentFile, attachmentName }),
     onSuccess: (_data, vars) => {
       refetch();
-      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoId: '', videoType: 'bunny', attachmentFile: '', attachmentName: '' } }));
+      setTopicForms((f) => ({ ...f, [vars.moduleId]: { title: '', videoId: '', videoType: 'bunny', bunnyLibraryId: '', attachmentFile: '', attachmentName: '' } }));
     },
   });
 
@@ -213,7 +213,7 @@ export default function CourseManage() {
   });
 
   const updateTopicMut = useMutation({
-    mutationFn: ({ moduleId, topicId, data }: { moduleId: string; topicId: string; data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string } }) =>
+    mutationFn: ({ moduleId, topicId, data }: { moduleId: string; topicId: string; data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string; bunnyLibraryId?: string } }) =>
       adminApi.updateTopic(id!, moduleId, topicId, data),
     onSuccess: () => {
       refetch();
@@ -560,6 +560,7 @@ export default function CourseManage() {
                                 videoId: t.videoId ?? '',
                                 videoUrl: t.videoUrl ?? '',
                                 videoType: t.videoType ?? 'bunny',
+                                bunnyLibraryId: t.bunnyLibraryId ?? '',
                                 attachments: t.attachments ?? [],
                               })
                             }
@@ -619,6 +620,16 @@ export default function CourseManage() {
                           <option value="bunny">Bunny</option>
                           <option value="youtube">YouTube</option>
                         </select>
+                        {(!tf.videoType || tf.videoType === 'bunny') && (
+                          <input
+                            value={tf.bunnyLibraryId || ''}
+                            onChange={(e) =>
+                              setTopicForms((f) => ({ ...f, [mod.id]: { ...tf, bunnyLibraryId: e.target.value } }))
+                            }
+                            placeholder="Library ID"
+                            className="w-28 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                          />
+                        )}
                         <input
                           value={tf.videoId}
                           onChange={(e) =>
@@ -636,6 +647,7 @@ export default function CourseManage() {
                               videoId: tf.videoType === 'youtube' ? '' : tf.videoId,
                               videoUrl: tf.videoType === 'youtube' ? tf.videoId : '',
                               videoType: tf.videoType || 'bunny',
+                              bunnyLibraryId: tf.videoType === 'youtube' ? '' : (tf.bunnyLibraryId || ''),
                               attachmentFile: tf.attachmentFile || undefined,
                               attachmentName: tf.attachmentName || undefined,
                             })
@@ -834,14 +846,25 @@ export default function CourseManage() {
                   />
                 </div>
               ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Video ID (Bunny Stream)</label>
-                  <input
-                    value={editingTopic.videoId}
-                    onChange={(e) => setEditingTopic({ ...editingTopic, videoId: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. e3f48eff-6b17-47e7-a4cc-3433adebb20d"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Library ID (Bunny Stream)</label>
+                    <input
+                      value={editingTopic.bunnyLibraryId || ''}
+                      onChange={(e) => setEditingTopic({ ...editingTopic, bunnyLibraryId: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="e.g. 123456"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Video ID (Bunny Stream)</label>
+                    <input
+                      value={editingTopic.videoId}
+                      onChange={(e) => setEditingTopic({ ...editingTopic, videoId: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="e.g. e3f48eff-6b17-47e7-a4cc-3433adebb20d"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1002,6 +1025,7 @@ export default function CourseManage() {
                         videoId: editingTopic.videoType === 'youtube' ? '' : (editingTopic.videoId ? editingTopic.videoId.trim() : ''),
                         videoUrl: editingTopic.videoType === 'youtube' ? (editingTopic.videoUrl ? editingTopic.videoUrl.trim() : '') : '',
                         videoType: editingTopic.videoType || 'bunny',
+                        bunnyLibraryId: editingTopic.videoType === 'youtube' ? '' : (editingTopic.bunnyLibraryId ? editingTopic.bunnyLibraryId.trim() : ''),
                       },
                     });
                   }

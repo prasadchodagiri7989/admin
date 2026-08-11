@@ -30,6 +30,7 @@ export interface AdminTopic {
   videoUrl?: string;
   videoId?: string;
   videoType?: 'bunny' | 'youtube';
+  bunnyLibraryId?: string;
   completed: boolean;
   notes?: string;
   attachments?: { id: string; name: string; url: string }[];
@@ -169,7 +170,7 @@ export const adminApi = {
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' }),
 
   // Topics
-  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoId?: string; videoUrl?: string; videoType?: string; attachmentFile?: string; attachmentName?: string }) =>
+  addTopic:    (courseId: string, moduleId: string, data: { title: string; videoId?: string; videoUrl?: string; videoType?: string; attachmentFile?: string; attachmentName?: string; bunnyLibraryId?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics`, {
       method: 'POST', body: JSON.stringify(data),
     }),
@@ -204,7 +205,7 @@ export const adminApi = {
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/reorder`, {
       method: 'PUT', body: JSON.stringify({ topicIds }),
     }),
-  updateTopic: (courseId: string, moduleId: string, topicId: string, data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string }) =>
+  updateTopic: (courseId: string, moduleId: string, topicId: string, data: { title?: string; videoId?: string; videoUrl?: string; videoType?: string; bunnyLibraryId?: string }) =>
     apiFetch<AdminCourse>(`/admin/courses/${courseId}/modules/${moduleId}/topics/${topicId}`, {
       method: 'PUT', body: JSON.stringify(data),
     }),

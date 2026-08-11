@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminCourse } from '@/api/admin';
 import { Plus, Pencil, Trash2, Settings, X, Loader2, Upload } from 'lucide-react';
@@ -238,8 +238,18 @@ function CourseModal({
 
 export default function Courses() {
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const shouldCreate = searchParams.get('create') === 'true';
+
   const [modal,    setModal]    = useState<'create' | AdminCourse | null>(null);
   const [deleting, setDeleting] = useState<AdminCourse | null>(null);
+
+  useEffect(() => {
+    if (shouldCreate) {
+      setModal('create');
+      setSearchParams({}, { replace: true });
+    }
+  }, [shouldCreate, setSearchParams]);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['admin-courses'],
