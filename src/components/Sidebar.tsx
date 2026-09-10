@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, BookOpen, Activity, ShieldAlert, LogOut, GraduationCap, Megaphone, X, Camera, Layers, MessageSquare,
+  LayoutDashboard, Users, BookOpen, Activity, ShieldAlert, LogOut, GraduationCap, Megaphone, X, Camera, Layers, MessageSquare, Briefcase,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/batches', icon: Layers, label: 'Batches' },
   { to: '/courses', icon: BookOpen, label: 'Courses' },
+  { to: '/jobs', icon: Briefcase, label: 'Job Scraper' },
   { to: '/announcements', icon: Megaphone, label: 'Announcements' },
   { to: '/discussions', icon: MessageSquare, label: 'Discussions' },
   { to: '/activity', icon: Activity, label: 'Login Activity' },

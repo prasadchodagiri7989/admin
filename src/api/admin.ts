@@ -277,4 +277,99 @@ export const adminApi = {
     }),
   deleteDiscussion: (id: string) =>
     apiFetch<{ message: string }>(`/discussions/${id}`, { method: 'DELETE' }),
+
+  // Job Scraper & Portal
+  getScraperHealth: () =>
+    apiFetch<{ running: boolean; port: number; status: string }>('/admin/job-scraper/health'),
+  scrapeJobs: (params: {
+    search_term: string;
+    location?: string;
+    sites?: string[];
+    results_wanted?: number;
+    hours_old?: number | null;
+    country_indeed?: string;
+    is_remote?: boolean;
+  }) =>
+    apiFetch<{
+      message: string;
+      search_id: number;
+      count: number;
+      files?: { csv_file_id?: number; json_file_id?: number };
+      jobs: ScrapedJob[];
+    }>('/admin/job-scraper/scrape', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+  getScraperHistory: () =>
+    apiFetch<{
+      mongo_searches: any[];
+      python_searches: any[];
+    }>('/admin/job-scraper/history'),
+  getSearchJobs: (searchId: string | number) =>
+    apiFetch<{ search_id: string | number; jobs: ScrapedJob[] }>(`/admin/job-scraper/history/${searchId}`),
+  publishJobs: (jobs: ScrapedJob[]) =>
+    apiFetch<{ message: string; publishedCount: number; updatedCount: number }>('/admin/jobs/publish', {
+      method: 'POST',
+      body: JSON.stringify({ jobs }),
+    }),
+  getPublishedJobs: (params?: { search?: string; site?: string; status?: string; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append('search', params.search);
+    if (params?.site) q.append('site', params.site);
+    if (params?.status) q.append('status', params.status);
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    const qs = q.toString();
+    return apiFetch<{ jobs: PublishedJob[]; total: number; page: number; totalPages: number }>(
+      `/admin/jobs/published${qs ? `?${qs}` : ''}`
+    );
+  },
+  deletePublishedJob: (id: string) =>
+    apiFetch<{ message: string }>(`/admin/jobs/published/${id}`, { method: 'DELETE' }),
 };
+
+export interface ScrapedJob {
+  site?: string;
+  title: string;
+  company: string;
+  location?: string;
+  job_type?: string;
+  is_remote?: boolean | number;
+  min_amount?: number | null;
+  max_amount?: number | null;
+  interval?: string;
+  currency?: string;
+  date_posted?: string;
+  job_url: string;
+  job_url_direct?: string;
+  description?: string;
+  is_published?: boolean;
+  published_status?: string | null;
+  search_id?: number | string;
+  raw_json?: any;
+}
+
+export interface PublishedJob {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  site: string;
+  job_type: string;
+  is_remote: boolean;
+  salary: {
+    min_amount: number | null;
+    max_amount: number | null;
+    currency: string;
+    interval: string;
+  };
+  date_posted: string;
+  job_url: string;
+  job_url_direct: string;
+  description: string;
+  skills: string[];
+  status: 'active' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+

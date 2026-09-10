@@ -14,6 +14,7 @@ import Announcements from './pages/Announcements';
 import Batches from './pages/Batches';
 import BatchDetail from './pages/BatchDetail';
 import Discussions from './pages/Discussions';
+import JobScraper from './pages/JobScraper';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient({
@@ -53,6 +54,7 @@ export default function App() {
                 <Route path="/batches/:id"         element={<BatchDetail />} />
                 <Route path="/courses"             element={<Courses />} />
                 <Route path="/courses/:id/manage"  element={<CourseManage />} />
+                <Route path="/jobs"                element={<JobScraper />} />
                 <Route path="/announcements"       element={<Announcements />} />
                 <Route path="/discussions"         element={<Discussions />} />
                 <Route path="/activity"            element={<Activity />} />

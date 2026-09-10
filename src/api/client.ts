@@ -20,10 +20,13 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
     },
   });
 
-  // Auto-logout on 401 (expired/invalid token)
-  if (res.status === 401) {
+  // Auto-logout on 401 (expired/invalid token) for authenticated requests
+  const isLoginRequest = path.includes('/auth/login');
+  if (res.status === 401 && !isLoginRequest) {
     clearSession();
-    window.location.href = '/login';
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
     throw new Error('Session expired. Please log in again.');
   }
 
