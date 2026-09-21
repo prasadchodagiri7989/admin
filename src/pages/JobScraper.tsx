@@ -265,7 +265,7 @@ export default function JobScraper() {
         },
       });
       const data = await res.json();
-      const jobs = data.jobs || publishedJobs;
+      const jobs = data.jobs || publishedData?.jobs || [];
       if (!jobs || !jobs.length) {
         showToast('No published jobs available to export', 'error');
         return;
