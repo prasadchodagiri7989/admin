@@ -18,8 +18,10 @@ import {
   X,
   ChevronRight,
   Filter,
+  FileCode,
 } from 'lucide-react';
 import { adminApi, ScrapedJob, PublishedJob } from '@/api/admin';
+import { downloadJobsHtml } from '@/utils/exportJobsHtml';
 import clsx from 'clsx';
 
 const AVAILABLE_SITES = [
@@ -239,6 +241,42 @@ export default function JobScraper() {
     }
   };
 
+  // Export Scraped HTML (Responsive Card View)
+  const handleExportScrapedHtml = () => {
+    if (!scrapedJobs.length) {
+      showToast('No scraped jobs available to export', 'error');
+      return;
+    }
+    try {
+      downloadJobsHtml(scrapedJobs, `scraped_jobs_${new Date().toISOString().slice(0, 10)}.html`);
+      showToast('HTML jobs file downloaded successfully', 'success');
+    } catch (err: any) {
+      showToast('Failed to export HTML: ' + err.message, 'error');
+    }
+  };
+
+  // Export Published HTML (Responsive Card View)
+  const handleExportPublishedHtml = async () => {
+    try {
+      const token = localStorage.getItem('sk_admin_token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/jobs/published?limit=1000`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      const jobs = data.jobs || publishedJobs;
+      if (!jobs || !jobs.length) {
+        showToast('No published jobs available to export', 'error');
+        return;
+      }
+      downloadJobsHtml(jobs, `published_jobs_${new Date().toISOString().slice(0, 10)}.html`);
+      showToast('Published jobs exported to HTML', 'success');
+    } catch (err: any) {
+      showToast('Failed to export HTML: ' + err.message, 'error');
+    }
+  };
+
   // Load Previous Search Results
   const loadSearchJobs = async (searchId: string | number) => {
     try {
@@ -438,6 +476,9 @@ export default function JobScraper() {
                   <option value={25}>25 jobs</option>
                   <option value={50}>50 jobs</option>
                   <option value={100}>100 jobs</option>
+                  <option value={200}>200 jobs</option>
+                  <option value={300}>300 jobs</option>
+                  <option value={500}>500 jobs</option>
                 </select>
               </div>
 
@@ -561,13 +602,23 @@ export default function JobScraper() {
                 )}
 
                 {scrapedJobs.length > 0 && (
-                  <button
-                    onClick={handleExportScrapedCsv}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
-                  >
-                    <Download className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Export CSV</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={handleExportScrapedCsv}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
+                    >
+                      <Download className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Export CSV</span>
+                    </button>
+                    <button
+                      onClick={handleExportScrapedHtml}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors shadow-sm"
+                      title="Export as responsive HTML file matching card grid layout"
+                    >
+                      <FileCode className="h-3.5 w-3.5 text-indigo-600" />
+                      <span>Export HTML</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -848,7 +899,7 @@ export default function JobScraper() {
               </select>
             </div>
 
-            {/* Export Published to CSV */}
+            {/* Export Published to CSV & HTML */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportPublishedCsv}
@@ -856,6 +907,15 @@ export default function JobScraper() {
               >
                 <Download className="h-3.5 w-3.5 text-slate-500" />
                 <span>Export Published CSV</span>
+              </button>
+
+              <button
+                onClick={handleExportPublishedHtml}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors shadow-sm"
+                title="Export published jobs as responsive HTML file matching card grid layout"
+              >
+                <FileCode className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Export Published HTML</span>
               </button>
 
               <button
