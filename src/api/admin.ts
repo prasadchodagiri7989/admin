@@ -315,6 +315,7 @@ export const adminApi = {
     hours_old?: number | null;
     country_indeed?: string;
     is_remote?: boolean;
+    include_title_in_description?: boolean;
   }) =>
     apiFetch<{
       message: string;

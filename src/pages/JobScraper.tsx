@@ -25,12 +25,21 @@ import { downloadJobsHtml } from '@/utils/exportJobsHtml';
 import clsx from 'clsx';
 
 const AVAILABLE_SITES = [
-  { id: 'indeed', label: 'Indeed', color: 'bg-blue-900/10 text-blue-800 border-blue-200' },
-  { id: 'linkedin', label: 'LinkedIn', color: 'bg-blue-600/10 text-blue-600 border-blue-200' },
+  { id: 'linkedin', label: 'LinkedIn Jobs', color: 'bg-blue-600/10 text-blue-600 border-blue-200' },
   { id: 'naukri', label: 'Naukri', color: 'bg-indigo-500/10 text-indigo-700 border-indigo-200' },
+  { id: 'indeed', label: 'Indeed', color: 'bg-blue-900/10 text-blue-800 border-blue-200' },
+  { id: 'naukrigulf', label: 'Naukrigulf', color: 'bg-cyan-500/10 text-cyan-700 border-cyan-200' },
+  { id: 'gulftalent', label: 'GulfTalent', color: 'bg-amber-500/10 text-amber-700 border-amber-200' },
+  { id: 'bayt', label: 'Bayt', color: 'bg-orange-500/10 text-orange-700 border-orange-200' },
+  { id: 'foundit_india', label: 'foundit India', color: 'bg-purple-500/10 text-purple-700 border-purple-200' },
+  { id: 'foundit_gulf', label: 'foundit Gulf', color: 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200' },
   { id: 'glassdoor', label: 'Glassdoor', color: 'bg-emerald-600/10 text-emerald-700 border-emerald-200' },
-  { id: 'zip_recruiter', label: 'ZipRecruiter', color: 'bg-green-700/10 text-green-800 border-green-200' },
-  { id: 'bayt', label: 'Bayt', color: 'bg-amber-600/10 text-amber-700 border-amber-200' },
+  { id: 'monster', label: 'Monster.com', color: 'bg-violet-600/10 text-violet-700 border-violet-200' },
+  { id: 'shine', label: 'Shine', color: 'bg-yellow-500/10 text-yellow-800 border-yellow-200' },
+  { id: 'timesjobs', label: 'TimesJobs', color: 'bg-red-500/10 text-red-700 border-red-200' },
+  { id: 'archinect', label: 'Archinect', color: 'bg-teal-500/10 text-teal-700 border-teal-200' },
+  { id: 'ribajobs', label: 'RIBA Jobs', color: 'bg-rose-600/10 text-rose-700 border-rose-200' },
+  { id: 'cibsejobs', label: 'CIBSE Jobs', color: 'bg-sky-600/10 text-sky-700 border-sky-200' },
 ];
 
 export default function JobScraper() {
@@ -40,10 +49,11 @@ export default function JobScraper() {
   // Scraper Form State
   const [searchTerm, setSearchTerm] = useState('BIM Engineer');
   const [location, setLocation] = useState('India');
-  const [selectedSites, setSelectedSites] = useState<string[]>(['indeed', 'linkedin', 'naukri']);
+  const [selectedSites, setSelectedSites] = useState<string[]>(['linkedin', 'naukri', 'indeed', 'archinect']);
   const [resultsWanted, setResultsWanted] = useState(15);
   const [hoursOld, setHoursOld] = useState<number | null>(72);
   const [isRemote, setIsRemote] = useState(false);
+  const [includeTitleInDescription, setIncludeTitleInDescription] = useState(true);
 
   // Scraped Results State
   const [scrapedJobs, setScrapedJobs] = useState<ScrapedJob[]>([]);
@@ -98,6 +108,19 @@ export default function JobScraper() {
     }
   };
 
+  // Quick Select Helpers
+  const selectAllSites = () => {
+    setSelectedSites(AVAILABLE_SITES.map((s) => s.id));
+  };
+
+  const selectAecSites = () => {
+    setSelectedSites(['archinect', 'ribajobs', 'cibsejobs', 'linkedin', 'naukri']);
+  };
+
+  const selectGulfSites = () => {
+    setSelectedSites(['naukrigulf', 'gulftalent', 'bayt', 'foundit_gulf', 'linkedin']);
+  };
+
   // Run Scraper Mutation
   const scrapeMutation = useMutation({
     mutationFn: () =>
@@ -108,6 +131,7 @@ export default function JobScraper() {
         results_wanted: resultsWanted,
         hours_old: hoursOld,
         is_remote: isRemote,
+        include_title_in_description: includeTitleInDescription,
       }),
     onSuccess: (data) => {
       setScrapedJobs(data.jobs || []);
@@ -503,9 +527,46 @@ export default function JobScraper() {
 
             {/* Target Job Platforms */}
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-500 mb-2">
-                Target Platforms ({selectedSites.length} selected)
-              </label>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <label className="block text-xs font-semibold uppercase text-slate-500">
+                  Target Platforms ({selectedSites.length} of {AVAILABLE_SITES.length} selected)
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllSites}
+                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={selectAecSites}
+                    className="text-[11px] font-semibold text-teal-600 hover:text-teal-800 hover:underline"
+                  >
+                    AEC &amp; BIM
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={selectGulfSites}
+                    className="text-[11px] font-semibold text-amber-600 hover:text-amber-800 hover:underline"
+                  >
+                    Gulf Portals
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSites(['linkedin', 'naukri', 'indeed'])}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:underline"
+                  >
+                    Reset Default
+                  </button>
+                </div>
+              </div>
+
+              {/* Platform Badges Grid */}
               <div className="flex flex-wrap gap-2">
                 {AVAILABLE_SITES.map((site) => {
                   const isSelected = selectedSites.includes(site.id);
@@ -517,8 +578,8 @@ export default function JobScraper() {
                       className={clsx(
                         'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all',
                         isSelected
-                          ? `${site.color} ring-2 ring-indigo-400/40 font-bold`
-                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                          ? `${site.color} ring-2 ring-indigo-400/40 font-bold shadow-sm`
+                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100 hover:text-slate-600'
                       )}
                     >
                       {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
@@ -526,13 +587,31 @@ export default function JobScraper() {
                     </button>
                   );
                 })}
+              </div>
 
-                <label className="ml-auto flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600">
+              {/* Advanced Scraping Toggles */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-slate-800 bg-indigo-50/70 hover:bg-indigo-50 px-3.5 py-2 rounded-xl border border-indigo-200/80 transition-colors shadow-xs">
+                  <input
+                    type="checkbox"
+                    checked={includeTitleInDescription}
+                    onChange={(e) => setIncludeTitleInDescription(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                  />
+                  <div>
+                    <span className="font-bold text-indigo-950">Include Job Title in Description</span>
+                    <span className="block text-[10px] text-indigo-600 font-normal">
+                      Automatically prepends &amp; integrates the role title into every scraped job description
+                    </span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50">
                   <input
                     type="checkbox"
                     checked={isRemote}
                     onChange={(e) => setIsRemote(e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
                   />
                   <span>Remote Jobs Only</span>
                 </label>
@@ -892,10 +971,9 @@ export default function JobScraper() {
                 className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
               >
                 <option value="all">All Platforms</option>
-                <option value="indeed">Indeed</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="naukri">Naukri</option>
-                <option value="glassdoor">Glassdoor</option>
+                {AVAILABLE_SITES.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
               </select>
             </div>
 
