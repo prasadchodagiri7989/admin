@@ -5,6 +5,7 @@ import {
   Search, Pencil, Trash2, X, Loader2, ShieldCheck, User2, Chrome,
   ChevronUp, ChevronDown, RotateCcw, SlidersHorizontal,
   Upload, Download, CheckCircle2, AlertCircle, FileText, Plus,
+  Phone, Layers, BookOpen,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -115,6 +116,7 @@ export default function Users() {
   const [editing,    setEditing]    = useState<AdminUser | null>(null);
   const [editName,   setEditName]   = useState('');
   const [editEmail,  setEditEmail]  = useState('');
+  const [editPhone,  setEditPhone]  = useState('');
   const [editRole,   setEditRole]   = useState('');
   const [editStatus, setEditStatus] = useState('');
 
@@ -130,6 +132,7 @@ export default function Users() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('student');
   const [newStatus, setNewStatus] = useState('active');
@@ -140,13 +143,14 @@ export default function Users() {
   });
 
   const createMut = useMutation({
-    mutationFn: (data: { name: string; email: string; role: string; password?: string; status?: string }) =>
+    mutationFn: (data: { name: string; email: string; role: string; password?: string; status?: string; phone?: string }) =>
       adminApi.createUser(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       setShowAddModal(false);
       setNewName('');
       setNewEmail('');
+      setNewPhone('');
       setNewPassword('');
       setNewRole('student');
       setNewStatus('active');
@@ -154,7 +158,7 @@ export default function Users() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name?: string; email?: string; role?: string; status?: string } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { name?: string; email?: string; role?: string; status?: string; phone?: string } }) =>
       adminApi.updateUser(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
@@ -229,6 +233,7 @@ export default function Users() {
     setEditing(u);
     setEditName(u.name);
     setEditEmail(u.email);
+    setEditPhone(u.phone || '');
     setEditRole(u.role);
     setEditStatus(u.status || 'active');
   };
@@ -392,6 +397,8 @@ export default function Users() {
                       User <SortIcon field="name" sort={sort} />
                     </button>
                   </th>
+                  <th className="px-4 py-3 text-left">Batch</th>
+                  <th className="px-4 py-3 text-left">Courses</th>
                   <th className="px-4 py-3 text-left">Role</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-left">
@@ -420,6 +427,55 @@ export default function Users() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-800">{u.name}</p>
                       <p className="text-xs text-gray-400">{u.email}</p>
+                      {u.phone && (
+                        <p className="text-[11px] text-emerald-600 font-mono flex items-center gap-1 mt-0.5">
+                          <Phone className="h-3 w-3" />
+                          <span>{u.phone}</span>
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.batches && u.batches.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {u.batches.map((b) => (
+                            <span
+                              key={b.id}
+                              className="inline-flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 px-2 py-0.5 text-xs font-medium border border-purple-200"
+                            >
+                              <Layers className="h-3 w-3 text-purple-500" />
+                              {b.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No batch</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.courses && u.courses.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {u.courses.slice(0, 2).map((c) => (
+                            <span
+                              key={c.id}
+                              className="inline-flex items-center gap-1 rounded-md bg-blue-50 text-blue-700 px-2 py-0.5 text-xs font-medium border border-blue-200 truncate max-w-[130px]"
+                              title={c.title}
+                            >
+                              <BookOpen className="h-3 w-3 text-blue-500 shrink-0" />
+                              <span className="truncate">{c.title}</span>
+                            </span>
+                          ))}
+                          {u.courses.length > 2 && (
+                            <span
+                              className="inline-flex items-center rounded-md bg-gray-100 text-gray-600 px-1.5 py-0.5 text-xs font-semibold cursor-default"
+                              title={u.courses.slice(2).map((c) => c.title).join(', ')}
+                            >
+                              +{u.courses.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No courses</span>
+                      )}
                     </td>
                     <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status={u.status || 'active'} /></td>
@@ -454,7 +510,7 @@ export default function Users() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-gray-400 text-sm">
+                    <td colSpan={11} className="px-4 py-10 text-center text-gray-400 text-sm">
                       {users.length === 0 ? 'No users yet.' : 'No users match the current filters.'}
                     </td>
                   </tr>
@@ -493,6 +549,19 @@ export default function Users() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Mobile Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                    className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -518,6 +587,44 @@ export default function Users() {
                   </select>
                 </div>
               </div>
+
+              {/* View user's batches & courses */}
+              <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 space-y-2.5">
+                <div>
+                  <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    Assigned Batches
+                  </span>
+                  {editing.batches && editing.batches.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {editing.batches.map((b) => (
+                        <span key={b.id} className="inline-flex items-center gap-1 rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-xs font-medium">
+                          <Layers className="h-3 w-3 text-purple-500" />
+                          {b.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No batches assigned</p>
+                  )}
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                    Accessible Courses
+                  </span>
+                  {editing.courses && editing.courses.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {editing.courses.map((c) => (
+                        <span key={c.id} className="inline-flex items-center gap-1 rounded-md bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-medium">
+                          <BookOpen className="h-3 w-3 text-blue-500" />
+                          {c.title}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">No courses accessible</p>
+                  )}
+                </div>
+              </div>
             </div>
             {updateMut.error && (
               <p className="mt-3 text-sm text-red-600">{(updateMut.error as Error).message}</p>
@@ -532,7 +639,7 @@ export default function Users() {
               <button
                 onClick={() => updateMut.mutate({
                   id: editing.id,
-                  data: { name: editName, email: editEmail, role: editRole, status: editStatus },
+                  data: { name: editName, email: editEmail, phone: editPhone, role: editRole, status: editStatus },
                 })}
                 disabled={updateMut.isPending}
                 className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
@@ -715,6 +822,7 @@ export default function Users() {
               createMut.mutate({
                 name: newName,
                 email: newEmail,
+                phone: newPhone || undefined,
                 password: newPassword || undefined,
                 role: newRole,
                 status: newStatus,
@@ -740,6 +848,19 @@ export default function Users() {
                   placeholder="e.g. john@example.com"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Mobile Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                  <input
+                    type="tel"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                    className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>

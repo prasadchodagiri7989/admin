@@ -14,6 +14,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: 'admin' | 'student';
   status: 'active' | 'blocked' | 'pending';
   avatar: string | null;
@@ -22,6 +23,8 @@ export interface AdminUser {
   lastLogin: string | null;
   lastIp: string | null;
   loginCount: number;
+  batches?: { id: string; name: string }[];
+  courses?: { id: string; title: string }[];
 }
 
 export interface AdminTopic {
@@ -90,16 +93,24 @@ export interface SuspiciousLogin {
   userAgent: string | null;
   browser: string | null;
   os: string | null;
+  faceCard?: string | null;
   createdAt: string;
+}
+
+export interface IpDetail {
+  ip: string;
+  count: number;
 }
 
 export interface SuspiciousUser {
   userId: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: string;
   status: 'active' | 'blocked';
   distinctIPs: string[];
+  ipDetails?: IpDetail[];
   ipCount: number;
   deviceCount: number;
   lastActiveIP: string;
@@ -137,9 +148,9 @@ export const adminApi = {
 
   // Users
   getUsers:   ()                                              => apiFetch<AdminUser[]>('/admin/users'),
-  createUser: (data: { name: string; email: string; role: string; password?: string; status?: string }) =>
+  createUser: (data: { name: string; email: string; role: string; password?: string; status?: string; phone?: string }) =>
     apiFetch<AdminUser>('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (id: string, data: { name?: string; email?: string; role?: string; status?: string }) =>
+  updateUser: (id: string, data: { name?: string; email?: string; role?: string; status?: string; phone?: string }) =>
     apiFetch<AdminUser>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string) =>
     apiFetch<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
@@ -216,6 +227,21 @@ export const adminApi = {
 
   // Suspicious
   getSuspiciousActivity: () => apiFetch<SuspiciousUser[]>('/admin/suspicious'),
+  resetUserIps: (userId: string, ip?: string) =>
+    apiFetch<{ success: boolean; message: string; lastActiveIP?: string }>(
+      `/admin/users/${userId}/reset-ips`,
+      { method: 'POST', body: JSON.stringify({ ip }) }
+    ),
+
+  // Database Sync
+  syncProdToUat: () =>
+    apiFetch<{
+      success: boolean;
+      message: string;
+      stats: { collection: string; count: number }[];
+      totalDocuments: number;
+      totalCollections: number;
+    }>('/admin/sync-prod-to-uat', { method: 'POST' }),
 
   // Announcements
   getAnnouncements: () => apiFetch<AdminAnnouncement[]>('/admin/announcements'),

@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/api/admin';
 import { Link } from 'react-router-dom';
 import {
   Users, BookOpen, LogIn, TrendingUp,
-  Monitor, Smartphone, Globe, Plus,
+  Monitor, Smartphone, Globe, Plus, Database, AlertTriangle, CheckCircle2, X, RefreshCw
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -47,9 +48,30 @@ function fmtShort(d: string) {
 }
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [syncResult, setSyncResult] = useState<{
+    success: boolean;
+    message: string;
+    stats: { collection: string; count: number }[];
+    totalDocuments: number;
+    totalCollections: number;
+  } | null>(null);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['stats'],
     queryFn: adminApi.getStats,
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: adminApi.syncProdToUat,
+    onSuccess: (res) => {
+      setSyncResult(res);
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['batches'] });
+    },
   });
 
   if (isLoading) {
@@ -74,6 +96,18 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex flex-wrap gap-3">
+          {/* Copy Prod to UAT Button */}
+          <button
+            onClick={() => {
+              setSyncResult(null);
+              setSyncModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 px-3.5 py-2 text-sm font-medium transition-colors shadow-sm"
+            title="Copy database records from Production to UAT"
+          >
+            <Database className="h-4 w-4" /> Copy Prod to UAT
+          </button>
+
           <Link
             to="/courses?create=true"
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shadow-sm"
@@ -191,6 +225,156 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+
+      {/* Copy Prod to UAT Confirmation & Progress Modal */}
+      {syncModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  <Database className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Copy Data: Prod to UAT</h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Database synchronization</p>
+                </div>
+              </div>
+              {!syncMutation.isPending && (
+                <button
+                  onClick={() => {
+                    setSyncModalOpen(false);
+                    setSyncResult(null);
+                  }}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {syncResult ? (
+                /* Success View */
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold">Synchronization Successful!</p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">{syncResult.message}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 dark:border-slate-800 p-4 space-y-2.5">
+                    <div className="flex justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider pb-1 border-b border-gray-100 dark:border-slate-800">
+                      <span>Collection</span>
+                      <span>Documents Copied</span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                      {syncResult.stats.map((s) => (
+                        <div key={s.collection} className="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-gray-50 dark:bg-slate-800/50">
+                          <code className="font-mono text-gray-700 dark:text-slate-300 font-medium">{s.collection}</code>
+                          <span className="font-semibold text-gray-900 dark:text-white bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-700">
+                            {s.count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-slate-800 text-xs font-bold text-gray-800 dark:text-slate-200">
+                      <span>Total Documents Synced</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">{syncResult.totalDocuments}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Confirmation View */
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-1 leading-relaxed">
+                      <p className="font-semibold text-sm">Destructive Overwrite Warning</p>
+                      <p>
+                        This will copy all collections and documents from <strong>Production (lms-backend)</strong> into <strong>UAT (lms-backend-uat)</strong>.
+                      </p>
+                      <p className="text-amber-700 dark:text-amber-400/90">
+                        Existing data in UAT will be replaced to exactly match current production data.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 rounded-xl bg-gray-50 dark:bg-slate-800/40 p-4 border border-gray-200/80 dark:border-slate-800 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 dark:text-slate-400">Source (Production):</span>
+                      <code className="font-mono font-medium text-gray-800 dark:text-slate-200">lms-backend</code>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 dark:text-slate-400">Destination (UAT):</span>
+                      <code className="font-mono font-medium text-amber-600 dark:text-amber-400">lms-backend-uat</code>
+                    </div>
+                  </div>
+
+                  {syncMutation.isError && (
+                    <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-xs text-red-600 dark:text-red-400">
+                      Sync failed: {(syncMutation.error as Error)?.message || 'Internal connection error.'}
+                    </div>
+                  )}
+
+                  {syncMutation.isPending && (
+                    <div className="flex items-center justify-center gap-3 py-4 text-sm font-medium text-amber-600 dark:text-amber-400">
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      <span>Synchronizing collections from Prod to UAT...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
+              {syncResult ? (
+                <button
+                  onClick={() => {
+                    setSyncModalOpen(false);
+                    setSyncResult(null);
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setSyncModalOpen(false)}
+                    disabled={syncMutation.isPending}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => syncMutation.mutate()}
+                    disabled={syncMutation.isPending}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    {syncMutation.isPending ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Copying...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        Confirm & Copy Now
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

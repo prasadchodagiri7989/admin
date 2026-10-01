@@ -93,7 +93,7 @@ input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:f
   background-color: rgba(99, 102, 241, 0.25) !important;
 }
 
-/* 7. Status Badge Tweaks */
+/* 7. Status Badge & Risk Row Tweaks */
 .bg-emerald-100, .bg-emerald-50, .bg-green-100, .bg-green-50 {
   background-color: rgba(16, 185, 129, 0.15) !important;
   color: #34d399 !important;
@@ -102,6 +102,10 @@ input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:f
   background-color: rgba(239, 68, 68, 0.15) !important;
   color: #f87171 !important;
 }
+.bg-orange-100, .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.15) !important;
+  color: #fb923c !important;
+}
 .bg-amber-100, .bg-amber-50, .bg-yellow-100, .bg-yellow-50 {
   background-color: rgba(245, 158, 11, 0.15) !important;
   color: #fbbf24 !important;
@@ -109,6 +113,19 @@ input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:f
 .bg-blue-100, .bg-blue-50 {
   background-color: rgba(59, 130, 246, 0.15) !important;
   color: #60a5fa !important;
+}
+
+.hover\:bg-red-100:hover, .hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+.hover\:bg-orange-100:hover, .hover\:bg-orange-50:hover {
+  background-color: rgba(249, 115, 22, 0.25) !important;
+}
+.hover\:bg-amber-100:hover, .hover\:bg-amber-50:hover {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+}
+.hover\:bg-emerald-100:hover, .hover\:bg-emerald-50:hover {
+  background-color: rgba(16, 185, 129, 0.25) !important;
 }
 
 /* 8. Search Keyboard Helper (Kbd) */
